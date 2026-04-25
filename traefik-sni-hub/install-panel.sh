@@ -146,7 +146,9 @@ DECOY_DOMAIN=$(echo "${EE_DOMAIN}" | sed 's/:.*$//')
 ok "Домен: ${BOLD}${DECOY_DOMAIN}${NC}"
 
 # RAW_KEY = plain 32-char hex; EE_SECRET = ee<hex><domain_hex> для tg:// ссылок
-RAW_KEY="$SECRET"
+# Поддерживаем оба формата: старый (SECRET=...) и новый (SECRET_1=...)
+RAW_KEY="${SECRET:-${SECRET_1:-}}"
+[[ -n "$RAW_KEY" ]] || fail "Не найден секрет в mtproto/.env (нет SECRET и SECRET_1)"
 DOMAIN_HEX=$(printf '%s' "$DECOY_DOMAIN" | xxd -p | tr -d '\n')
 EE_SECRET="ee${RAW_KEY}${DOMAIN_HEX}"
 ok "Секрет: ${BOLD}${RAW_KEY:0:8}…${NC}"
