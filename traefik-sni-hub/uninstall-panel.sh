@@ -68,8 +68,13 @@ if [[ -d "$SERVICE_DIR" ]]; then
 fi
 
 if [[ -d "$DATA_DIR" ]]; then
-    info "Удаляю ${DATA_DIR} (config.json, users.json, venv)…"
-    rm -rf "$DATA_DIR"
+    info "Удаляю ${DATA_DIR} (config.json, venv)…"
+    rm -f  "${DATA_DIR}/config.json"
+    rm -rf "${DATA_DIR}/.venv"
+    if [[ -f "${DATA_DIR}/users.json" ]]; then
+        ok "users.json сохранён — пользователи будут восстановлены при переустановке панели"
+    fi
+    rmdir "$DATA_DIR" 2>/dev/null || true
 fi
 
 ok "Панель удалена"

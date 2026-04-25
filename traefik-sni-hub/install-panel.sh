@@ -151,6 +151,20 @@ DOMAIN_HEX=$(printf '%s' "$DECOY_DOMAIN" | xxd -p | tr -d '\n')
 EE_SECRET="ee${RAW_KEY}${DOMAIN_HEX}"
 ok "Секрет: ${BOLD}${RAW_KEY:0:8}…${NC}"
 
+# ─── Конвертируем mtproto .env в формат SECRET_N ────────────────────────────
+# teleproxy читает SECRET_1..16 при старте и генерирует config.toml из них.
+# Все пользователи выживают при рестарте контейнера — без панели в том числе.
+info "Обновляю mtproto/.env (формат SECRET_N)…"
+cat > "${MTPROTO_DIR}/.env" <<EOF
+PORT=${PROXY_PORT:-2443}
+STATS_PORT=8888
+EE_DOMAIN=${DECOY_DOMAIN}:8443
+SECRET_1=${RAW_KEY}
+SECRET_LABEL_1=default
+SECRET_LIMIT_1=15
+EOF
+ok "mtproto/.env обновлён"
+
 # ─── Проверяем DNS ──────────────────────────────────────────────────────────
 info "Проверяю DNS для ${DECOY_DOMAIN}…"
 RESOLVED_IP=$(dig +short "$DECOY_DOMAIN" 2>/dev/null | grep -E '^[0-9]+\.' | tail -1 || true)
@@ -239,11 +253,7 @@ services:
     image: ghcr.io/teleproxy/teleproxy:latest
     container_name: mtproto
     restart: unless-stopped
-    environment:
-      - PORT=${PROXY_PORT:-2443}
-      - STATS_PORT=8888
-      - SECRET=${RAW_KEY}
-      - EE_DOMAIN=${DECOY_DOMAIN}:8443
+    env_file: .env
     volumes:
       - ./data:/opt/teleproxy/data
     expose:
@@ -388,6 +398,7 @@ EE_DOMAIN_RAW=${DECOY_DOMAIN}
 SERVER_IP=${SERVER_IP}
 DATA_DIR=/data
 TOML_PATH=/teleproxy/config.toml
+MTPROTO_ENV_PATH=/mtproto/.env
 EOF
 
 # ─── docker-compose.yml ─────────────────────────────────────────────────────
@@ -421,6 +432,7 @@ services:
     volumes:
       - ${DATA_DIR}:/data
       - ${MTPROTO_DIR}/data/config.toml:/teleproxy/config.toml
+      - ${MTPROTO_DIR}/.env:/mtproto/.env
       - /var/run/docker.sock:/var/run/docker.sock
     expose:
       - "8000"
