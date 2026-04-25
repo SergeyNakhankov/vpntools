@@ -162,8 +162,11 @@ else
 fi
 
 if [[ "$USE_SELF_SIGNED" == true ]]; then
-    read -rp "  Продолжить с self-signed сертификатом? [y/N] " ans < /dev/tty
-    [[ "$ans" =~ ^[Yy]$ ]] || { echo "Отменено."; exit 0; }
+    if [[ -e /dev/tty ]] && read -rp "  Продолжить с self-signed сертификатом? [y/N] " ans < /dev/tty 2>/dev/null; then
+        [[ "$ans" =~ ^[Yy]$ ]] || { echo "Отменено."; exit 0; }
+    else
+        warn "Нет интерактивного терминала — продолжаю с self-signed автоматически"
+    fi
 fi
 
 # ─── Email для LE ───────────────────────────────────────────────────────────
@@ -171,8 +174,8 @@ CERTBOT_EMAIL=""
 if [[ "$USE_SELF_SIGNED" == false ]]; then
     if [[ -n "${LETSENCRYPT_EMAIL:-}" ]]; then
         CERTBOT_EMAIL="$LETSENCRYPT_EMAIL"
-    else
-        read -rp "  Email для Let's Encrypt (Enter = без email): " CERTBOT_EMAIL < /dev/tty || true
+    elif [[ -e /dev/tty ]]; then
+        read -rp "  Email для Let's Encrypt (Enter = без email): " CERTBOT_EMAIL < /dev/tty 2>/dev/null || true
     fi
 fi
 
@@ -269,7 +272,7 @@ ok "MTProto docker-compose обновлён для TOML"
 info "Скачиваю backend…"
 BACKEND_DIR="${SERVICE_DIR}/backend"
 for f in Dockerfile requirements.txt main.py auth.py users.py teleproxy_config.py; do
-    curl -sSL "${REPO_BASE}/panel/backend/${f}" -o "${BACKEND_DIR}/${f}" \
+    curl -fsSL "${REPO_BASE}/panel/backend/${f}" -o "${BACKEND_DIR}/${f}" \
         || fail "Не удалось скачать ${f}"
 done
 ok "Backend файлы скачаны"
@@ -280,17 +283,17 @@ PANEL_DIST_URL="${REPO_BASE}/panel/dist"
 PANEL_HTML="${SERVICE_DIR}/html"
 
 # Скачиваем login-страницу
-curl -sSL "${REPO_BASE}/panel/login/index.html" -o "${PANEL_HTML}/index.html" \
+curl -fsSL "${REPO_BASE}/panel/login/index.html" -o "${PANEL_HTML}/index.html" \
     || fail "Не удалось скачать index.html"
 
 # Скачиваем dist/index.html панели
 mkdir -p "${PANEL_HTML}/panel"
-curl -sSL "${PANEL_DIST_URL}/index.html" -o "${PANEL_HTML}/panel/index.html" \
+curl -fsSL "${PANEL_DIST_URL}/index.html" -o "${PANEL_HTML}/panel/index.html" \
     || fail "Не удалось скачать panel/index.html"
 
 # Скачиваем assets по именам из Vite manifest
 mkdir -p "${PANEL_HTML}/panel/assets"
-MANIFEST=$(curl -sSL "${PANEL_DIST_URL}/.vite/manifest.json" 2>/dev/null || true)
+MANIFEST=$(curl -fsSL "${PANEL_DIST_URL}/.vite/manifest.json" 2>/dev/null || true)
 if [[ -z "$MANIFEST" ]]; then
     fail "Не удалось получить Vite manifest. Убедись что dist/ собран и запушен в репо."
 fi
@@ -312,8 +315,8 @@ while IFS= read -r asset_file; do
     [[ -z "$asset_file" ]] && continue
     dest="${PANEL_HTML}/panel/${asset_file}"
     mkdir -p "$(dirname "$dest")"
-    curl -sSL "${PANEL_DIST_URL}/${asset_file}" -o "$dest" \
-        || warn "Не удалось скачать ${asset_file}"
+    curl -fsSL "${PANEL_DIST_URL}/${asset_file}" -o "$dest" \
+        || fail "Не удалось скачать ${asset_file}"
 done <<< "$ASSET_FILES"
 
 ok "Фронтенд скачан"
@@ -344,7 +347,8 @@ else
         ok "Let's Encrypt сертификат получен"
 
         CRON_CMD="0 3 * * 0 docker run --rm -p 80:80 -v ${SERVICE_DIR}/certs:/etc/letsencrypt certbot/certbot renew --standalone && cd ${SERVICE_DIR} && docker compose restart decoy"
-        (crontab -l 2>/dev/null | grep -v "certbot renew"; echo "$CRON_CMD") | crontab -
+        EXISTING_CRON=$(crontab -l 2>/dev/null | grep -v "certbot renew" || true)
+        { [[ -n "$EXISTING_CRON" ]] && printf '%s\n' "$EXISTING_CRON"; printf '%s\n' "$CRON_CMD"; } | crontab -
         ok "Cron для обновления сертификата добавлен"
     else
         warn "Let's Encrypt не удался, генерирую self-signed…"
@@ -359,7 +363,7 @@ else
 fi
 
 # ─── Скачиваем nginx.conf ───────────────────────────────────────────────────
-curl -sSL "${REPO_BASE}/panel/login/nginx.conf" -o "${SERVICE_DIR}/nginx.conf" \
+curl -fsSL "${REPO_BASE}/panel/login/nginx.conf" -o "${SERVICE_DIR}/nginx.conf" \
     || fail "Не удалось скачать nginx.conf"
 ok "nginx.conf скачан"
 
@@ -446,7 +450,7 @@ ok "Traefik catch-all настроен"
 cd "$SERVICE_DIR"
 
 info "Сборка backend-образа…"
-docker compose build --quiet
+docker compose build || fail "Сборка backend-образа не удалась (см. вывод выше)"
 
 info "Запуск панели…"
 docker compose up -d --remove-orphans
