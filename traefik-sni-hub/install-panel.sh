@@ -289,28 +289,15 @@ curl -fsSL "${REPO_BASE}/panel/login/index.html" -o "${PANEL_HTML}/index.html" \
 # Скачиваем dist/index.html панели
 mkdir -p "${PANEL_HTML}/panel"
 curl -fsSL "${PANEL_DIST_URL}/index.html" -o "${PANEL_HTML}/panel/index.html" \
-    || fail "Не удалось скачать panel/index.html"
+    || fail "Не удалось скачать panel/index.html. Убедись что panel/dist/ собран и запушен в репо: cd panel && npm run build"
 
-# Скачиваем assets по именам из Vite manifest
+# Имена ассетов берём из самого index.html — Vite жёстко прописывает туда хешированные пути
 mkdir -p "${PANEL_HTML}/panel/assets"
-MANIFEST=$(curl -fsSL "${PANEL_DIST_URL}/.vite/manifest.json" 2>/dev/null || true)
-if [[ -z "$MANIFEST" ]]; then
-    fail "Не удалось получить Vite manifest. Убедись что dist/ собран и запушен в репо."
+ASSET_FILES=$(grep -oE 'assets/[A-Za-z0-9._-]+\.(js|css)' "${PANEL_HTML}/panel/index.html" | sort -u || true)
+if [[ -z "$ASSET_FILES" ]]; then
+    fail "В panel/index.html не найдено ассетов. Проверь содержимое: ${PANEL_HTML}/panel/index.html"
 fi
-MANIFEST_TMP=$(mktemp)
-echo "$MANIFEST" > "$MANIFEST_TMP"
-ASSET_FILES=$("$VENV_PY" - "$MANIFEST_TMP" <<'PYEOF'
-import json, sys
-with open(sys.argv[1]) as f:
-    m = json.load(f)
-files = []
-for v in m.values():
-    files.append(v['file'])
-    files.extend(v.get('css', []))
-print('\n'.join(set(files)))
-PYEOF
-)
-rm -f "$MANIFEST_TMP"
+
 while IFS= read -r asset_file; do
     [[ -z "$asset_file" ]] && continue
     dest="${PANEL_HTML}/panel/${asset_file}"
@@ -319,7 +306,7 @@ while IFS= read -r asset_file; do
         || fail "Не удалось скачать ${asset_file}"
 done <<< "$ASSET_FILES"
 
-ok "Фронтенд скачан"
+ok "Фронтенд скачан ($(echo "$ASSET_FILES" | wc -l) файла)"
 
 # ─── Сертификат ─────────────────────────────────────────────────────────────
 if [[ "$USE_SELF_SIGNED" == true ]]; then
