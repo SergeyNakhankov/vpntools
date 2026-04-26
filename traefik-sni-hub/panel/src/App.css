@@ -173,7 +173,10 @@
 /* ── user detail ─────────────────────────────────────────────────────────── */
 .user-detail {
   flex: 1;
-  padding: 32px 48px;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px 36px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -609,11 +612,8 @@
 @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-6px); } }
 
 /* ── responsive breakpoints ─────────────────────────────────────────────── */
-@media (min-width: 1920px) {
-  .user-detail { padding: 40px 64px; }
-}
 @media (min-width: 2560px) {
-  .user-detail { padding: 48px 80px; }
+  .user-detail { max-width: 1040px; padding: 48px 40px; }
   .sidebar     { width: 320px; }
 }
 
