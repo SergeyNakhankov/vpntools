@@ -271,7 +271,6 @@ function QRImage({ value }) {
 
   useEffect(() => {
     if (!value) return
-    let url = null
     new QRCodeStyling({
       width: 120, height: 120,
       type: 'svg',
@@ -283,10 +282,11 @@ function QRImage({ value }) {
       cornersDotOptions:    { color: '#2AABEE', type: 'dot' },
     }).getRawData('svg').then(blob => {
       if (!blob) return
-      url = URL.createObjectURL(blob)
-      setSrc(url)
+      const reader = new FileReader()
+      reader.onload = () => setSrc(reader.result)
+      reader.readAsDataURL(blob)
     }).catch(() => {})
-    return () => { if (url) URL.revokeObjectURL(url) }
+    return () => {}
   }, [value])
 
   return (
