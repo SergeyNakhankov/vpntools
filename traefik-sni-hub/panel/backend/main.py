@@ -19,7 +19,7 @@ CONFIG_PATH = Path(os.environ.get("DATA_DIR", "/data")) / "config.json"
 async def _sync_users_delayed():
     # Wait for teleproxy to start and regenerate config.toml from env vars,
     # then re-apply any panel users that aren't in the freshly generated TOML.
-    await asyncio.sleep(15)
+    await asyncio.sleep(5)
     try:
         users_module.sync_all_to_toml()
     except Exception:
