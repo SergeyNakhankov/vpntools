@@ -284,7 +284,7 @@ function QRImage({ value }) {
     if (!qrRef.current) {
       qrRef.current = new QRCodeStyling({
         width: 120, height: 120,
-        type: 'canvas',
+        type: 'svg',
         data: value,
         image: TELEGRAM_LOGO,
         qrOptions:    { errorCorrectionLevel: 'M' },
@@ -292,7 +292,7 @@ function QRImage({ value }) {
         backgroundOptions: { color: '#0f1318' },
         cornersSquareOptions: { type: 'extra-rounded', color: '#e2e8f0' },
         cornersDotOptions:    { color: '#2AABEE' },
-        imageOptions: { margin: 4, imageSize: 0.32 },
+        imageOptions: { margin: 4, imageSize: 0.32, crossOrigin: 'anonymous' },
       })
       qrRef.current.append(containerRef.current)
     } else {

@@ -344,12 +344,16 @@
 
 /* QR */
 .qr-canvas {
-  width: 96px;
-  height: 96px;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
-  display: block;
+  overflow: hidden;
   align-self: center;
+  line-height: 0;
+}
+.qr-canvas svg {
+  display: block;
+  width: 120px;
+  height: 120px;
 }
 
 /* ── empty state ─────────────────────────────────────────────────────────── */
