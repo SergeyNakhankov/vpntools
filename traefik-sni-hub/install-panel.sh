@@ -330,6 +330,10 @@ if [[ -f "$CERT_FILE" && -f "$KEY_FILE" ]]; then
         CERT_VALID=true
         CERT_SUBJECT=$(openssl x509 -noout -subject -in "$CERT_FILE" 2>/dev/null | sed 's/.*CN=//' | tr -d ' ')
         CERT_EXPIRY=$(openssl x509 -noout -enddate -in "$CERT_FILE" 2>/dev/null | cut -d= -f2)
+        # Detect if existing cert is self-signed (issuer == subject)
+        _CERT_SUBJ=$(openssl x509 -noout -subject -in "$CERT_FILE" 2>/dev/null | sed 's/^subject=//')
+        _CERT_ISSR=$(openssl x509 -noout -issuer  -in "$CERT_FILE" 2>/dev/null | sed 's/^issuer=//')
+        [[ "$_CERT_SUBJ" == "$_CERT_ISSR" ]] && USE_SELF_SIGNED=true
         ok "Сертификат уже существует (CN=${CERT_SUBJECT}, до ${CERT_EXPIRY}) — пропускаю certbot"
     else
         warn "Сертификат истекает менее чем через 30 дней — обновляю"
