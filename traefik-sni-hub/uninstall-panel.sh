@@ -44,8 +44,9 @@ fi
 
 # Подчищаем образ backend (если есть)
 info "Удаляю образ meridian-backend…"
-docker image rm -f panel-meridian-backend 2>/dev/null || true
-docker image rm -f panel_meridian-backend 2>/dev/null || true
+docker image rm -f panel-meridian-backend >/dev/null 2>&1 || true
+docker image rm -f panel_meridian-backend >/dev/null 2>&1 || true
+ok "Образ удалён"
 
 # ─── Удаляем Traefik catch-all ──────────────────────────────────────────────
 if [[ -f "${INSTALL_DIR}/traefik/dynamic/decoy.yml" ]]; then
@@ -78,22 +79,20 @@ if [[ -d "$DATA_DIR" ]]; then
 fi
 
 ok "Панель удалена"
+echo ""
 
 # ─── Предупреждение про MTProto в TOML-режиме ───────────────────────────────
 if [[ -f "${INSTALL_DIR}/services/mtproto/data/config.toml" ]]; then
-    echo ""
     warn "MTProto остался в TOML-режиме (${INSTALL_DIR}/services/mtproto/data/config.toml)."
     warn "Без панели управлять пользователями придётся вручную через TOML + SIGHUP."
     echo ""
 fi
 
 if [[ -d "${INSTALL_DIR}/certs" ]]; then
-    echo ""
     ok "Сертификат сохранён в ${INSTALL_DIR}/certs/ — при переустановке панели будет использован повторно."
     echo ""
 fi
 
-echo ""
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BOLD} Готово.${NC} Traefik и MTProto продолжают работать."
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

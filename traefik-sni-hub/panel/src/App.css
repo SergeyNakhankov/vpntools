@@ -481,6 +481,13 @@
 }
 .btn-danger:hover { opacity: .85; }
 
+.btn-warning-ghost {
+  background: var(--yellow-dim);
+  color: var(--yellow);
+  border: 1px solid rgba(245,158,11,.25);
+}
+.btn-warning-ghost:hover { background: rgba(245,158,11,.22); }
+
 .btn-danger-ghost {
   background: var(--red-dim);
   color: var(--red);

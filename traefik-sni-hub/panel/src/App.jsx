@@ -370,7 +370,7 @@ function UserDetail({ user, serverIp, domain, onToggle, onDelete, copiedKey, onC
         </div>
         <div className="detail-header-actions">
           <button
-            className={`btn btn-sm ${user.active ? 'btn-ghost' : 'btn-success'}`}
+            className={`btn btn-sm ${user.active ? 'btn-warning-ghost' : 'btn-success'}`}
             onClick={onToggle}
             disabled={toggling}
           >
