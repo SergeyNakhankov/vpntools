@@ -178,22 +178,26 @@ def delete_user(user_id: int) -> bool:
 
 
 def sync_all_to_toml() -> None:
-    """Ensure .env has all active users from users.json, then write TOML + SIGHUP.
+    """Ensure .env has all active users from users.json with correct limits.
 
-    Called on backend startup. Handles the case where users.json has entries
-    not yet reflected in .env (e.g. first start after panel reinstall).
+    Called on backend startup. Handles reinstall: secrets may already exist in
+    .env but with wrong limits (e.g. teleproxy reset them to defaults).
     """
-    meta    = _load_meta()
-    env     = teleproxy_config.read_env()
-    existing = {s["key"] for s in teleproxy_config.get_secrets(env)}
+    meta     = _load_meta()
+    env      = teleproxy_config.read_env()
+    existing = {s["key"]: s for s in teleproxy_config.get_secrets(env)}
     changed  = False
 
     for m in meta:
         if not m.get("active", True):
             continue
-        raw_key = _raw_key(m["secret"])
+        raw_key    = _raw_key(m["secret"])
+        stored_max = m.get("maxConn", 15)
         if raw_key not in existing:
-            teleproxy_config.add_secret(env, _toml_entry_for(m, m.get("maxConn", 15)))
+            teleproxy_config.add_secret(env, _toml_entry_for(m, stored_max))
+            changed = True
+        elif existing[raw_key].get("limit") != stored_max:
+            teleproxy_config.update_secret_limit(env, raw_key, stored_max)
             changed = True
 
     if changed:
