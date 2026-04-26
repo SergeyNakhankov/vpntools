@@ -326,13 +326,15 @@ KEY_FILE="${CERTS_DIR}/privkey.pem"
 # Проверяем существующий сертификат: есть ли файл и не истекает ли он в ближайшие 30 дней
 CERT_VALID=false
 if [[ -f "$CERT_FILE" && -f "$KEY_FILE" ]]; then
-    if openssl x509 -checkend 2592000 -noout -in "$CERT_FILE" 2>/dev/null; then
+    if openssl x509 -checkend 2592000 -noout -in "$CERT_FILE" >/dev/null 2>&1; then
         CERT_VALID=true
-        CERT_SUBJECT=$(openssl x509 -noout -subject -in "$CERT_FILE" 2>/dev/null | sed 's/.*CN=//' | tr -d ' ')
+        # CN extraction: handle both OpenSSL 1.x (CN=foo) and 3.x (CN = foo) formats
+        CERT_SUBJECT=$(openssl x509 -noout -subject -in "$CERT_FILE" 2>/dev/null \
+            | sed 's/.*CN\s*=\s*//' | sed 's/[,/ ].*//')
         CERT_EXPIRY=$(openssl x509 -noout -enddate -in "$CERT_FILE" 2>/dev/null | cut -d= -f2)
         # Detect if existing cert is self-signed (issuer == subject)
-        _CERT_SUBJ=$(openssl x509 -noout -subject -in "$CERT_FILE" 2>/dev/null | sed 's/^subject=//')
-        _CERT_ISSR=$(openssl x509 -noout -issuer  -in "$CERT_FILE" 2>/dev/null | sed 's/^issuer=//')
+        _CERT_SUBJ=$(openssl x509 -noout -subject -in "$CERT_FILE" 2>/dev/null | sed 's/^subject\s*=\s*//')
+        _CERT_ISSR=$(openssl x509 -noout -issuer  -in "$CERT_FILE" 2>/dev/null | sed 's/^issuer\s*=\s*//')
         [[ "$_CERT_SUBJ" == "$_CERT_ISSR" ]] && USE_SELF_SIGNED=true
         ok "Сертификат уже существует (CN=${CERT_SUBJECT}, до ${CERT_EXPIRY}) — пропускаю certbot"
     else
