@@ -158,7 +158,10 @@ async def create_user(body: CreateUserRequest, user: AuthUser):
         raise HTTPException(status_code=400, detail="Label: letters, digits, - and _ only")
     if not 1 <= body.maxConn <= 100:
         raise HTTPException(status_code=400, detail="maxConn must be between 1 and 100")
-    return users_module.create_user(label, body.maxConn)
+    try:
+        return users_module.create_user(label, body.maxConn)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.put("/api/v1/users/{user_id}")
@@ -200,4 +203,5 @@ async def config(user: AuthUser):
     return {
         "serverIp": os.environ.get("SERVER_IP", ""),
         "domain":   os.environ.get("EE_DOMAIN_RAW", ""),
+        "maxUsers": users_module.MAX_USERS,
     }

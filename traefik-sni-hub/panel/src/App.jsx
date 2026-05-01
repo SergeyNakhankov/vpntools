@@ -505,7 +505,7 @@ function Skeleton() {
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [users,      setUsers]      = useState([])
-  const [config,     setConfig]     = useState({ serverIp: '', domain: '' })
+  const [config,     setConfig]     = useState({ serverIp: '', domain: '', maxUsers: null })
   const [loading,    setLoading]    = useState(true)
   const [selected,   setSelected]   = useState(null)
   const [showAdd,    setShowAdd]    = useState(false)
@@ -618,9 +618,13 @@ export default function App() {
 
         <div className="user-list-header">
           <span className="user-list-title">
-            Users <span className="user-count">{users.length}</span>
+            Users <span className="user-count">{users.length}{config.maxUsers != null ? ` / ${config.maxUsers}` : ''}</span>
           </span>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowAdd(true)} disabled={loading}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setShowAdd(true)}
+            disabled={loading || (config.maxUsers != null && users.length >= config.maxUsers)}
+          >
             <IconPlus /> Add
           </button>
         </div>

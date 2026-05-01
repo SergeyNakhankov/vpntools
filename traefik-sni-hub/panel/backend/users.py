@@ -8,6 +8,7 @@ from typing import Optional
 import teleproxy_config
 
 DATA_PATH = Path(os.environ.get("DATA_DIR", "/data")) / "users.json"
+MAX_USERS = 16
 
 
 def _load_meta() -> list[dict]:
@@ -105,10 +106,10 @@ def create_user(label: str, max_conn: int) -> dict:
         "created":  datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "lastSeen": "never",
     }
+    teleproxy_config.add_secret(env, {"key": raw, "label": label, "limit": max_conn})
+
     meta.append(entry)
     _save_meta(meta)
-
-    teleproxy_config.add_secret(env, {"key": raw, "label": label, "limit": max_conn})
     teleproxy_config.write_env(env)
     teleproxy_config.write_toml(env)
     teleproxy_config.reload_teleproxy()
