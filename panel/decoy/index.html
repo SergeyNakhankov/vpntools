@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__DECOY_DOMAIN__ — Sign In</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230ea5e9'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='700'>M</text></svg>">
+<meta name="robots" content="noindex, nofollow">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0c0e14;color:#c9d1d9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px}
+.card{width:100%;max-width:360px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.brand-icon{width:36px;height:36px;background:#0ea5e9;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff}
+.brand h1{font-size:18px;font-weight:700;color:#f0f4f8}
+.sub{font-size:13px;color:#586e75;margin-bottom:28px}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:12px;font-weight:500;color:#8b949e;margin-bottom:5px}
+.fg input{width:100%;padding:10px 12px;background:#161b22;border:1px solid #30363d;border-radius:7px;color:#e6edf3;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s}
+.fg input:focus{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.15)}
+.fg input::placeholder{color:#484f58}
+.row{display:flex;align-items:center;margin-bottom:22px;font-size:13px}
+.row label{display:flex;align-items:center;gap:8px;color:#8b949e;cursor:pointer;user-select:none}
+.row input[type=checkbox]{accent-color:#0ea5e9;width:14px;height:14px}
+.btn{width:100%;padding:10px;background:#0ea5e9;color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px;height:40px}
+.btn:hover{background:#0284c7}
+.btn:disabled{opacity:.7;cursor:not-allowed}
+.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.alert{padding:10px 12px;border-radius:7px;font-size:13px;margin-bottom:16px;display:none;line-height:1.5}
+.alert-err {background:#1c1215;border:1px solid #5c2131;color:#f87171}
+.alert-warn{background:#1a1806;border:1px solid #5c4a13;color:#fbbf24}
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="brand"><div class="brand-icon">M</div><h1>__DECOY_DOMAIN__</h1></div>
+    <p class="sub">Sign in to continue</p>
+    <div class="alert alert-err"  id="err"></div>
+    <div class="alert alert-warn" id="warn"></div>
+    <form id="f">
+        <div class="fg"><label for="email">Email</label><input type="email" id="email" placeholder="you@__DECOY_DOMAIN__" autocomplete="username" required></div>
+        <div class="fg"><label for="pw">Password</label><input type="password" id="pw" placeholder="Enter password" autocomplete="current-password" required></div>
+        <div class="row"><label><input type="checkbox" name="remember"> Keep me signed in</label></div>
+        <button class="btn" type="submit" id="btn"><span id="bt">Sign in</span></button>
+    </form>
+</div>
+<script>
+(function(){
+    var f=document.getElementById('f'),btn=document.getElementById('btn'),bt=document.getElementById('bt');
+    var err=document.getElementById('err'),warn=document.getElementById('warn');
+    f.addEventListener('submit',function(e){
+        e.preventDefault();
+        if(btn.disabled)return;
+        err.style.display='none';warn.style.display='none';
+        btn.disabled=true;bt.innerHTML='<div class="spinner"></div>';
+        fetch('/api/v1/auth/login',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-Request-ID':crypto.randomUUID()},
+            body:JSON.stringify({username:document.getElementById('email').value,password:document.getElementById('pw').value,remember:f.remember.checked})
+        }).then(function(r){return r.json().then(function(d){return{status:r.status,data:d}})})
+        .then(function(r){
+            document.getElementById('pw').value='';
+            btn.disabled=false;bt.textContent='Sign in';
+            var msg=(r.data&&typeof r.data.detail==='string')?r.data.detail:null;
+            if(r.status===429){
+                warn.textContent=msg||'Too many attempts. Try again later.';
+                warn.style.display='block';
+                btn.disabled=true;bt.textContent='Locked';
+            }else{
+                err.textContent=msg||'Authentication failed.';
+                err.style.display='block';
+            }
+        }).catch(function(){
+            btn.disabled=false;bt.textContent='Sign in';
+            err.textContent='Service unavailable. Please try again later.';
+            err.style.display='block';
+        });
+    });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian</title>
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #0b0e17;
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: #111827;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 36px 32px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .4s ease .15s, transform .4s ease .15s;
+}
+.card.ready { opacity: 1; transform: translateY(0); }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.brand-icon {
+  width: 32px; height: 32px;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.brand-icon svg { width: 16px; height: 16px; }
+.brand-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e2e8f0;
+  letter-spacing: -0.3px;
+}
+.tagline {
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 28px;
+  letter-spacing: 0.02em;
+}
+
+.alert {
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  display: none;
+}
+.alert-err  { background: rgba(239,68,68,.06); border: 1px solid rgba(239,68,68,.15); color: #ef4444; }
+.alert-warn { background: rgba(245,158,11,.06); border: 1px solid rgba(245,158,11,.15); color: #f59e0b; }
+
+.fg { margin-bottom: 14px; }
+.fg label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.fg input {
+  width: 100%;
+  padding: 9px 11px;
+  background: #0f1624;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+.fg input:focus    { border-color: #3b82f6; }
+.fg input:disabled { opacity: .4; }
+.fg input::placeholder { color: #1e293b; }
+.fg input:-webkit-autofill,
+.fg input:-webkit-autofill:hover,
+.fg input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #0f1624 inset;
+  -webkit-text-fill-color: #e2e8f0;
+  caret-color: #e2e8f0;
+  transition: background-color 9999s ease-out 0s;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 22px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+}
+.row input[type=checkbox] { accent-color: #3b82f6; width: 14px; height: 14px; }
+
+.btn {
+  width: 100%;
+  height: 40px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .15s;
+}
+.btn:hover    { background: #1d4ed8; }
+.btn.locked   { background: #141d2e; color: #475569; cursor: not-allowed; }
+.btn:disabled { cursor: not-allowed; }
+
+.spinner {
+  width: 15px; height: 15px;
+  border: 2px solid rgba(255,255,255,.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.ft {
+  padding: 10px 20px;
+  border-top: 1px solid #1e293b;
+  text-align: center;
+  font-size: 11px;
+  color: #1e293b;
+  opacity: 0;
+  transition: opacity .5s ease .3s;
+}
+.ft.ready { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="center">
+  <div class="card" id="card">
+
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 2L13 5V11L8 14L3 11V5L8 2Z" stroke="#3b82f6" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="8" cy="8" r="1.5" fill="#3b82f6"/>
+        </svg>
+      </div>
+      <span class="brand-name">Meridian</span>
+    </div>
+    <div class="tagline">Authentication required</div>
+
+    <div class="alert alert-err"  id="err"></div>
+    <div class="alert alert-warn" id="warn"></div>
+
+    <form id="f">
+      <div class="fg">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="admin" autocomplete="username" required>
+      </div>
+      <div class="fg">
+        <label for="pw">Password</label>
+        <input type="password" id="pw" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <label class="row">
+        <input type="checkbox" name="remember"> Keep me signed in
+      </label>
+      <button class="btn" type="submit" id="btn">Sign in</button>
+    </form>
+
+  </div>
+</div>
+
+<div class="ft" id="ft">&copy; 2026 Meridian</div>
+
+<script>
+(function () {
+  var card = document.getElementById('card');
+  var ft   = document.getElementById('ft');
+  var f    = document.getElementById('f');
+  var btn  = document.getElementById('btn');
+  var err  = document.getElementById('err');
+  var warn = document.getElementById('warn');
+
+  requestAnimationFrame(function () {
+    card.classList.add('ready');
+    ft.classList.add('ready');
+  });
+
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (btn.disabled) return;
+
+    err.style.display  = 'none';
+    warn.style.display = 'none';
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div>';
+
+    fetch('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: document.getElementById('username').value,
+        password: document.getElementById('pw').value,
+        remember: f.remember.checked
+      })
+    })
+    .then(function (r) {
+      return r.json().then(function (d) { return { status: r.status, data: d }; });
+    })
+    .then(function (r) {
+      if (r.status === 200) {
+        window.location.href = window.location.pathname.replace(/\/login\/?$/, '/');
+        return;
+      }
+      document.getElementById('pw').value = '';
+      var msg = (typeof r.data.detail === 'string' ? r.data.detail : null) || 'Authentication failed.';
+      if (r.status === 429) {
+        warn.textContent   = msg;
+        warn.style.display = 'block';
+        btn.classList.add('locked');
+        btn.textContent = 'Locked';
+      } else {
+        err.textContent   = msg;
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Sign in';
+      }
+    })
+    .catch(function () {
+      err.textContent   = 'Service unavailable.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    });
+  });
+})();
+</script>
+</body>
+</html>
