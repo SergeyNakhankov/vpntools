@@ -371,7 +371,7 @@ setup_certbot_cron() {
     local hook="cp /etc/letsencrypt/live/${domain}/fullchain.pem ${cert_dir}/fullchain.pem && \
 cp /etc/letsencrypt/live/${domain}/privkey.pem ${cert_dir}/privkey.pem && \
 docker exec ${reload_target} nginx -s reload"
-    ( crontab -l 2>/dev/null | grep -v "certbot renew"
+    ( crontab -l 2>/dev/null | grep -v "certbot renew" || true
       echo "0 3 * * 0 certbot renew --quiet --deploy-hook '${hook}'" ) | crontab -
 }
 
@@ -385,7 +385,7 @@ docker exec ${reload_target} nginx -s reload"
 # SIGHUP forces teleproxy to refresh once everything else is confirmed up.
 setup_reboot_cron() {
     local hook="sleep 15 && cd ${INSTALL_DIR} && docker compose up -d --remove-orphans && sleep 5 && docker kill --signal=SIGHUP mtproto"
-    ( crontab -l 2>/dev/null | grep -v "meridian-reboot"
+    ( crontab -l 2>/dev/null | grep -v "meridian-reboot" || true
       echo "@reboot ${hook} # meridian-reboot" ) | crontab -
 }
 
@@ -905,7 +905,9 @@ cmd_install() {
     rm -f /tmp/docker-build.log
 
     info "Запускаю стек…"
-    docker compose up -d --remove-orphans >/dev/null 2>&1
+    docker compose up -d --remove-orphans >/tmp/docker-up.log 2>&1 \
+        || { cat /tmp/docker-up.log; rm -f /tmp/docker-up.log; fail "Не удалось запустить стек (см. вывод выше)"; }
+    rm -f /tmp/docker-up.log
 
     sleep 3
 
@@ -966,7 +968,9 @@ cmd_update() {
         download_decoy
         cd "$INSTALL_DIR"
         docker compose pull --quiet decoy 2>/dev/null || true
-        docker compose up -d --no-deps decoy >/dev/null 2>&1
+        docker compose up -d --no-deps decoy >/tmp/docker-up.log 2>&1 \
+            || { cat /tmp/docker-up.log; rm -f /tmp/docker-up.log; fail "Не удалось перезапустить decoy (см. вывод выше)"; }
+        rm -f /tmp/docker-up.log
     fi
 
     info "Пересобираю образ meridian-backend…"
@@ -976,7 +980,9 @@ cmd_update() {
     rm -f /tmp/docker-build.log
 
     info "Перезапускаю meridian-backend…"
-    docker compose up -d --no-deps meridian-backend >/dev/null 2>&1
+    docker compose up -d --no-deps meridian-backend >/tmp/docker-up.log 2>&1 \
+        || { cat /tmp/docker-up.log; rm -f /tmp/docker-up.log; fail "Не удалось перезапустить meridian-backend (см. вывод выше)"; }
+    rm -f /tmp/docker-up.log
 
     if ! $USE_DECOY; then
         info "Перезагружаю nginx…"
