@@ -261,9 +261,9 @@ select_sni() {
 }
 
 get_server_ip() {
-    SERVER_IP=$(curl -s --max-time 5 ifconfig.me \
-        || curl -s --max-time 5 api.ipify.org \
-        || curl -s --max-time 5 icanhazip.com \
+    SERVER_IP=$(curl -4 -s --max-time 5 ifconfig.me \
+        || curl -4 -s --max-time 5 api.ipify.org \
+        || curl -4 -s --max-time 5 icanhazip.com \
         || echo "")
     [[ -n "$SERVER_IP" ]] || fail "Не удалось определить внешний IP сервера"
     ok "IP сервера: ${SERVER_IP}"
