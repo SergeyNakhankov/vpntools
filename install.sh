@@ -375,6 +375,20 @@ docker exec ${reload_target} nginx -s reload"
       echo "0 3 * * 0 certbot renew --quiet --deploy-hook '${hook}'" ) | crontab -
 }
 
+# ── Reboot recovery ─────────────────────────────────────────────────────────────
+# mtproto (teleproxy) has no depends_on on decoy/nginx, and per-container
+# `restart: unless-stopped` policies are applied by dockerd independently on
+# daemon start — compose's dependency order is NOT consulted on host reboot.
+# If mtproto starts before decoy's network alias (FAKE_TLS_DOMAIN) is resolvable,
+# its DRS lookup fails and it never retries on its own. Re-running
+# `docker compose up -d` after boot restores compose's start ordering, and the
+# SIGHUP forces teleproxy to refresh once everything else is confirmed up.
+setup_reboot_cron() {
+    local hook="sleep 15 && cd ${INSTALL_DIR} && docker compose up -d --remove-orphans && sleep 5 && docker kill --signal=SIGHUP mtproto"
+    ( crontab -l 2>/dev/null | grep -v "meridian-reboot"
+      echo "@reboot ${hook} # meridian-reboot" ) | crontab -
+}
+
 # ── Credentials ────────────────────────────────────────────────────────────────
 generate_credentials() {
     USERNAME=$(openssl rand -hex 4)
@@ -830,7 +844,6 @@ cmd_install() {
         echo ""
         info "Останавливаю текущий стек…"
         cd "$INSTALL_DIR" && docker compose down 2>/dev/null || true
-        rm -f "$INSTALL_DIR/certs/fullchain.pem" "$INSTALL_DIR/certs/privkey.pem"
     elif ss -tlnp 2>/dev/null | grep -qE ':443\b'; then
         warn "Порт 443 занят:"
         ss -tlnp | grep ':443' || true
@@ -907,6 +920,8 @@ cmd_install() {
         fail "Не запустились контейнеры: ${failed[*]}\nПроверь: cd ${INSTALL_DIR} && docker compose logs"
     fi
 
+    setup_reboot_cron
+
     touch "$INSTALL_DIR/.installed"
 
     local panel_url
@@ -968,6 +983,8 @@ cmd_update() {
         docker exec nginx nginx -s reload >/dev/null 2>&1 \
             || warn "nginx reload не удался — перезапусти вручную: docker exec nginx nginx -s reload"
     fi
+
+    setup_reboot_cron
 
     ok "Обновление завершено"
 }
@@ -1067,6 +1084,11 @@ cmd_uninstall() {
     if crontab -l 2>/dev/null | grep -q "certbot renew"; then
         info "Удаляю cron certbot…"
         crontab -l 2>/dev/null | grep -v "certbot renew" | crontab - || true
+    fi
+
+    if crontab -l 2>/dev/null | grep -q "meridian-reboot"; then
+        info "Удаляю cron reboot-hook…"
+        crontab -l 2>/dev/null | grep -v "meridian-reboot" | crontab - || true
     fi
 
     info "Удаляю файлы…"
